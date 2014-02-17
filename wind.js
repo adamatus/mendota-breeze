@@ -89,41 +89,43 @@ var timeAxis = d3.svg.axis().scale(time_scale).orient("bottom");
 var yAxisSpeed = d3.svg.axis().scale(speed_scale).orient("left");
 var yAxisDir = d3.svg.axis().scale(dir_scale).tickValues([0,45,90,135,180,225,270,315,360]).orient("right");
 
-var windchart = d3.select("#wind-chart")
-    .append("svg:svg")
-    .attr("width", width)
-    .attr("height", height+padding);
+var draw_timeseries = function() {
+  var windchart = d3.select("#wind-chart")
+      .append("svg:svg")
+      .attr("width", width)
+      .attr("height", height+padding);
 
-var plot = windchart.append('g')
-  .attr('id','plot')
-  .attr('transform','translate('+ml+','+mt+')');
+  var plot = windchart.append('g')
+    .attr('id','plot')
+    .attr('transform','translate('+ml+','+mt+')');
 
-var time_axis = plot.append("g")
-.attr("class", "x axis")
-  .attr('transform','translate(0,'+h+')');
-time_axis.append('svg:text')
-  .text('Last 3 Hours')
-  .attr('transform','translate('+(w/2)+',80)');
-time_axis.call(timeAxis);
+  var time_axis = plot.append("g")
+  .attr("class", "x axis")
+    .attr('transform','translate(0,'+h+')');
+  time_axis.append('svg:text')
+    .text('Last 3 Hours')
+    .attr('transform','translate('+(w/2)+',80)');
+  time_axis.call(timeAxis);
 
-// Add y-axis
-var y_axis_speed = plot.append("g")
-  .attr("class", "y axis");
-y_axis_speed.append('svg:text')
-  .text('Wind Speed')
-  .attr('transform','translate(-100,'+speed_scale(15)+')');
-y_axis_speed.call(yAxisSpeed);
+  // Add y-axis
+  var y_axis_speed = plot.append("g")
+    .attr("class", "y axis");
+  y_axis_speed.append('svg:text')
+    .text('Wind Speed')
+    .attr('transform','translate(-100,'+speed_scale(15)+')');
+  y_axis_speed.call(yAxisSpeed);
 
-var y_axis_dir = plot.append("g")
-  .attr("class", "y axis")
-  .attr('transform','translate('+w+',0)');
-y_axis_dir.append('svg:text')
-  .text('Wind Direction')
-  .attr('transform','translate(100,'+speed_scale(15)+')');
-y_axis_dir.call(yAxisDir);
+  var y_axis_dir = plot.append("g")
+    .attr("class", "y axis")
+    .attr('transform','translate('+w+',0)');
+  y_axis_dir.append('svg:text')
+    .text('Wind Direction')
+    .attr('transform','translate(100,'+speed_scale(15)+')');
+  y_axis_dir.call(yAxisDir);
 
-var plotgroup = plot.append('g')
-  .attr('class','plot-group');
+  var plotgroup = plot.append('g')
+    .attr('class','plot-group');
+};
 
 var speed_line = d3.svg.line()
   .interpolate('monotone')
@@ -136,8 +138,7 @@ var dir_line = d3.svg.line()
   .y(function(d) { return dir_scale(d.wind_direction); });
 
 var plot_wind = function() {
-  console.log('add lines');
-  var line_group = plotgroup.append('svg:g')
+  var line_group = d3.select('.plot-group').append('svg:g')
     .attr('class','line-group');
 
   line_group.append('svg:path')
@@ -202,6 +203,12 @@ var yql_json2ascii = function(d) {
 //  plot_wind();
 //});
 
+var draw_plots = function() {
+  draw_timeseries();
+  update_timescale();
+  plot_wind();
+};
+
 var pull_local = function() {
   d3.csv('ascii.txt', function(d) {
     return {
@@ -213,8 +220,7 @@ var pull_local = function() {
     };
   }, function(error, rows) {
     ascii = rows;
-    update_timescale();
-    plot_wind();
+    draw_plots();
   });
 };
 
@@ -230,8 +236,7 @@ var pull_tower = function() {
         console.log('Got results!');
         console.log(data.query.results.json);
         ascii = yql_json2ascii(data.query.results.json);
-        update_timescale();
-        plot_wind();
+        draw_plots();
       } else {
         console.log('Did not get results!');
       }
