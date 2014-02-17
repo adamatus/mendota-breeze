@@ -167,17 +167,76 @@ var update_timescale = function () {
 var format = d3.time.format("%Y-%m-%d %X");
 var ascii = [];
 
-d3.csv('ascii.txt', function(d) {
-//d3.csv('http://metobs.ssec.wisc.edu/app/rig/tower/data/ascii?begin=2014-02-17%2018:37:00&end=2014-02-17%2021:37:00&symbols=dir:spd:&separator=,&interval=00:00:05', function(d) {
-  return {
-    stamp: format.parse(d['YYYY-MM-DD'] + ' ' + d['hh:mm:ss']),
-    //air_temp: +d.air_temp,
-    wind_direction: +d.wind_direction,
-    wind_speed: +d.wind_speed,
-    //pressure: +d.pressure
-  };
-}, function(error, rows) {
-  ascii = rows;
-  update_timescale();
-  plot_wind();
-});
+var json2ascii = function(d) {
+  var myascii = [];
+  out = {};
+  for (var i = 0; i < d.data.length; i++) {
+    out = {stamp: format.parse(d.stamps[i])};
+    for (var j = 0; j < d.symbols.length; j++) {
+      out[d.symbols[j]] = d.data[i][j];
+    }
+
+    myascii.push(out);
+  }
+  return myascii;
+};
+
+var yql_json2ascii = function(d) {
+  var myascii = [];
+  out = {};
+  for (var i = 0; i < d.data.length; i++) {
+    out = {stamp: format.parse(d.stamps[i])};
+    for (var j = 0; j < d.symbols.length; j++) {
+      out[d.symbols[j]] = +d.data[i].json[j];
+    }
+
+    myascii.push(out);
+  }
+  return myascii;
+};
+
+
+//d3.json('data.json', function(d) {
+//  ascii = json2ascii(d);
+//  update_timescale();
+//  plot_wind();
+//});
+
+var pull_local = function() {
+  d3.csv('ascii.txt', function(d) {
+    return {
+      stamp: format.parse(d['YYYY-MM-DD'] + ' ' + d['hh:mm:ss']),
+      //air_temp: +d.air_temp,
+      wind_direction: +d.wind_direction,
+      wind_speed: +d.wind_speed,
+      //pressure: +d.pressure
+    };
+  }, function(error, rows) {
+    ascii = rows;
+    update_timescale();
+    plot_wind();
+  });
+};
+
+// May also use: http://whateverorigin.org/
+var pull_tower = function() {
+  $.getJSON("http://query.yahooapis.com/v1/public/yql",
+    {
+      q:      "select * from json where url=\"http://metobs.ssec.wisc.edu/app/rig/tower/data/json?begin=2014-02-17%2018:37:00&end=2014-02-17%2021:37:00&symbols=dir:spd:&separator=,&interval=00:00:05\"",
+      format: "json"
+    },
+    function(data){
+      if (data.query.results) {
+        console.log('Got results!');
+        console.log(data.query.results.json);
+        ascii = yql_json2ascii(data.query.results.json);
+        update_timescale();
+        plot_wind();
+      } else {
+        console.log('Did not get results!');
+      }
+    }
+  );
+};
+
+pull_local();
