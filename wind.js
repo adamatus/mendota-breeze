@@ -1,4 +1,4 @@
-
+// Generic helper functions
 var mean = function(a) {
   var sum = 0;
   for (var i = 0; i < a.length; i++){
@@ -56,12 +56,68 @@ var rolling_circmean = function(o, col, win_length) {
   return rolling_stat(o,col,circ_mean,win_length);
 };
 
+var get_5_num_summary = function(a) {
+  a.sort(d3.ascending);
+  out = {};
+  out.spd_min = d3.min(a);
+  out.spd_first = d3.quantile(a,0.25);
+  out.spd_half = d3.median(a);
+  out.spd_third = d3.quantile(a,0.75);
+  out.spd_max = d3.max(a);
+  return out;
+};
+
+var get_circ_5_num_summary = function(a) {
+  // FIXME Need to compute proper min/max/first/third
+  a.sort(d3.ascending);
+  out = {};
+  out.dir_half = circ_mean(a);
+  out.dir_min = -20;
+  out.dir_max = 20;
+  out.dir_first = -10;
+  out.dir_third = 10;
+
+  return out;
+};
+
+// This project specific helper functions
+
+var json2ascii = function(d) {
+  var myascii = [];
+  out = {};
+  for (var i = 0; i < d.data.length; i++) {
+    out = {stamp: format.parse(d.stamps[i])};
+    for (var j = 0; j < d.symbols.length; j++) {
+      out[d.symbols[j]] = d.data[i][j];
+    }
+
+    myascii.push(out);
+  }
+  return myascii;
+};
+
+var yql_json2ascii = function(d) {
+  var myascii = [];
+  out = {};
+  for (var i = 0; i < d.data.length; i++) {
+    out = {stamp: format.parse(d.stamps[i])};
+    for (var j = 0; j < d.symbols.length; j++) {
+      out[d.symbols[j]] = +d.data[i].json[j];
+    }
+
+    myascii.push(out);
+  }
+  return myascii;
+};
+
+// Global plot variables
+
 var padding = 40,
     width = 1100,
     height = 450,
     started = false;
 
-var margins = [50, 200, 50, 200],
+var margins = [100, 200, 50, 200],
     mb = margins[0],
     ml = margins[1],
     mt = margins[2],
@@ -84,14 +140,33 @@ var dir_scale = d3.scale.linear()
   .domain([0,360])
   .rangeRound([h, 0]);
 
+var summary_x = d3.scale.linear()
+  .domain([0,12])
+  .range([0, w]);
+
 var xAxis = d3.svg.axis().scale(x).orient("top");
 var timeAxis = d3.svg.axis().scale(time_scale).orient("bottom");
 var yAxisSpeed = d3.svg.axis().scale(speed_scale).orient("left");
 var yAxisDir = d3.svg.axis().scale(dir_scale).tickValues([0,45,90,135,180,225,270,315,360]).orient("right");
 
+var format = d3.time.format("%Y-%m-%d %X");
+var ascii = [];
+
+// Full timeseries specific code
+var speed_line = d3.svg.line()
+  .interpolate('monotone')
+  .x(function(d,i) { return time_scale(d.stamp); })
+  .y(function(d) { return speed_scale(d.wind_speed); });
+
+var dir_line = d3.svg.line()
+  .interpolate('monotone')
+  .x(function(d,i) { return time_scale(d.stamp); })
+  .y(function(d) { return dir_scale(d.wind_direction); });
+
 var draw_timeseries = function() {
   var windchart = d3.select("#wind-chart")
       .append("svg:svg")
+      .attr('id','wind-chart')
       .attr("width", width)
       .attr("height", height+padding);
 
@@ -127,18 +202,8 @@ var draw_timeseries = function() {
     .attr('class','plot-group');
 };
 
-var speed_line = d3.svg.line()
-  .interpolate('monotone')
-  .x(function(d,i) { return time_scale(d.stamp); })
-  .y(function(d) { return speed_scale(d.wind_speed); });
-
-var dir_line = d3.svg.line()
-  .interpolate('monotone')
-  .x(function(d,i) { return time_scale(d.stamp); })
-  .y(function(d) { return dir_scale(d.wind_direction); });
-
 var plot_wind = function() {
-  var line_group = d3.select('.plot-group').append('svg:g')
+  var line_group = d3.select('#wind-chart .plot-group').append('svg:g')
     .attr('class','line-group');
 
   line_group.append('svg:path')
@@ -165,49 +230,170 @@ var update_timescale = function () {
   d3.select('.x.axis').transition().call(timeAxis);
 };
 
-var format = d3.time.format("%Y-%m-%d %X");
-var ascii = [];
 
-var json2ascii = function(d) {
-  var myascii = [];
-  out = {};
-  for (var i = 0; i < d.data.length; i++) {
-    out = {stamp: format.parse(d.stamps[i])};
-    for (var j = 0; j < d.symbols.length; j++) {
-      out[d.symbols[j]] = d.data[i][j];
-    }
+// Summary plot specific code
+var draw_summary = function() {
+  var windchart = d3.select("#wind-summary")
+      .append("svg:svg")
+      .attr('id','wind-summary')
+      .attr("width", width)
+      .attr("height", height+padding);
 
-    myascii.push(out);
-  }
-  return myascii;
+  var plot = windchart.append('g')
+    .attr('id','plot')
+    .attr('transform','translate('+ml+','+mt+')');
+
+  var time_axis = plot.append("g")
+  .attr("class", "x axis")
+    .attr('transform','translate(0,'+h+')');
+  time_axis.append('svg:text')
+    .text('Last 3 Hours')
+    .attr('transform','translate('+(w/2)+',100)');
+  time_axis.call(timeAxis);
+
+  // Add y-axis
+  var y_axis_speed = plot.append("g")
+    .attr("class", "y axis");
+  y_axis_speed.append('svg:text')
+    .text('Wind Speed')
+    .attr('transform','translate(-100,'+speed_scale(15)+')');
+  y_axis_speed.append('svg:text')
+    .text('Wind Direction')
+    .attr('transform','translate(-100,'+(h+60)+')');
+  y_axis_speed.call(yAxisSpeed);
+
+  var plotgroup = plot.append('g')
+    .attr('class','plot-group');
 };
 
-var yql_json2ascii = function(d) {
-  var myascii = [];
-  out = {};
-  for (var i = 0; i < d.data.length; i++) {
-    out = {stamp: format.parse(d.stamps[i])};
-    for (var j = 0; j < d.symbols.length; j++) {
-      out[d.symbols[j]] = +d.data[i].json[j];
-    }
+var compute_summaries = function() {
+  var out = [];
+  var size = ascii.length/12;
+  var starts = d3.range(0, ascii.length, size);
 
-    myascii.push(out);
+  var get_speed = function(d) { return d.wind_speed; };
+  var get_dir = function(d) { return d.wind_direction; };
+
+  for (var i = 0; i < starts.length; i++) {
+    var b = ascii.slice(starts[i],starts[i]+size);
+    var spd = b.map(get_speed);
+    var tmp = get_5_num_summary(spd);
+    var dir = b.map(get_dir);
+    $().extend(tmp,get_circ_5_num_summary(dir));
+
+    out.push(tmp);
   }
-  return myascii;
+  return out;
 };
 
+var add_summary_bars = function(summary_data) {
+  var bar_groups = d3.select('#wind-summary g.plot-group').selectAll('.bar-group')
+      .data(summary_data)
+    .enter().append('svg:g')
+      .attr('class','bar-group');
 
-//d3.json('data.json', function(d) {
-//  ascii = json2ascii(d);
-//  update_timescale();
-//  plot_wind();
-//});
+  bar_groups.append('svg:rect')
+      .attr('height', function(d) { return speed_scale(d.spd_min) - speed_scale(d.spd_max);})
+      .attr('width', summary_x(1))
+      .style('fill','#deebf7')
+      .attr('x', function(d,i) { return summary_x(i);})
+      .attr('y', function(d) { return speed_scale(d.spd_max) - speed_scale(30);});
 
+  bar_groups.append('svg:rect')
+      .attr('height', function(d) { return speed_scale(d.spd_first) - speed_scale(d.spd_third);})
+      .attr('width', summary_x(1))
+      .style('fill','#9ecae1')
+      .attr('x', function(d,i) { return summary_x(i);})
+      .attr('y', function(d) { return speed_scale(d.spd_third) - speed_scale(30);});
+
+  bar_groups.append('svg:line')
+      .style('stroke','#3182bd')
+      .style('stroke-width','2px')
+      .attr('x1',function(d,i) { return summary_x(i); })
+      .attr('x2',function(d,i) { return summary_x(i+1); })
+      .attr('y1',function(d) { return speed_scale(d.spd_half); })
+      .attr('y2',function(d) { return speed_scale(d.spd_half); });
+};
+
+var add_summary_dir_arrows = function(summary_data) {
+  var arrow_groups = d3.select('#wind-summary g.plot-group').selectAll('.arrow-group')
+      .data(summary_data)
+    .enter().append('svg:g')
+      .attr('class','arrow-group')
+      .attr('transform',function(d,i) {
+        return 'translate('+summary_x(i)+','+(h+60)+') rotate('+d.dir_half+','+summary_x(0.5)+',0)';
+      });
+
+  var outer_arc = d3.svg.arc()
+        .innerRadius(0)
+        .outerRadius(summary_x(0.85))
+        .startAngle(function(d) {
+          return deg2rad(d.dir_min);
+        })
+        .endAngle(function(d) {
+          return deg2rad(d.dir_max);
+        });
+
+  var inner_arc = d3.svg.arc()
+        .innerRadius(0)
+        .outerRadius(summary_x(0.85))
+        .startAngle(function(d) {
+          return deg2rad(d.dir_first);
+        })
+        .endAngle(function(d) {
+          return deg2rad(d.dir_third);
+        });
+
+  arrow_groups.append("path")
+    .attr("d", outer_arc)
+    .style("fill", '#e5f5f9')
+    .attr('transform','translate('+summary_x(0.5)+',25)');
+
+  arrow_groups.append("path")
+    .attr("d", inner_arc)
+    .style("fill", '#a1d99b')
+    .attr('transform','translate('+summary_x(0.5)+',25)');
+
+  // Mean direction line
+  arrow_groups.append('svg:line')
+      .style('stroke','#31a354')
+      .style('stroke-width','2px')
+      .attr('x1',function(d,i) { return summary_x(0.5); })
+      .attr('x2',function(d,i) { return summary_x(0.5); })
+      .attr('y1',function(d) { return summary_x(0)-summary_x(0.4); })
+      .attr('y2',function(d) { return summary_x(0)+summary_x(0.4); });
+  arrow_groups.append('svg:line')
+      .style('stroke','#31a354')
+      .style('stroke-width','2px')
+      .attr('x1',function(d,i) { return summary_x(0.35); })
+      .attr('x2',function(d,i) { return summary_x(0.5); })
+      .attr('y1',function(d) { return summary_x(0)-summary_x(0.3); })
+      .attr('y2',function(d) { return summary_x(0)-summary_x(0.4); });
+  arrow_groups.append('svg:line')
+      .style('stroke','#31a354')
+      .style('stroke-width','2px')
+      .attr('x1',function(d,i) { return summary_x(0.5); })
+      .attr('x2',function(d,i) { return summary_x(0.65); })
+      .attr('y1',function(d) { return summary_x(0)-summary_x(0.4); })
+      .attr('y2',function(d) { return summary_x(0)-summary_x(0.3); });
+
+};
+
+// Initial callback on data pull
 var draw_plots = function() {
+
+  draw_summary();
+  update_timescale();
+  var summary_data = compute_summaries();
+  add_summary_bars(summary_data);
+  add_summary_dir_arrows(summary_data);
+
   draw_timeseries();
   update_timescale();
   plot_wind();
 };
+
+
 
 var pull_local = function() {
   d3.csv('ascii.txt', function(d) {
