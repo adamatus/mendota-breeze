@@ -100,11 +100,11 @@ var yql_json2ascii = function(d) {
   var myascii = [];
   out = {};
   for (var i = 0; i < d.data.length; i++) {
-    out = {stamp: format.parse(d.stamps[i])};
+    var time = moment(d.stamps[i]).subtract('hours',6).format('YYYY-MM-DD HH:mm:ss');
+    out = {stamp: format.parse(time)};
     for (var j = 0; j < d.symbols.length; j++) {
       out[d.symbols[j]] = +d.data[i].json[j];
     }
-
     myascii.push(out);
   }
   return myascii;
@@ -272,7 +272,7 @@ var compute_summaries = function() {
   var starts = d3.range(0, ascii.length, size);
 
   var get_speed = function(d) { return d.wind_speed; };
-  var get_dir = function(d) { return d.wind_direction; };
+  var get_dir = function(d) { return d.wind_direction + 180; };
 
   for (var i = 0; i < starts.length; i++) {
     var b = ascii.slice(starts[i],starts[i]+size);
@@ -410,17 +410,30 @@ var pull_local = function() {
   });
 };
 
+
+var pull_last_3_hours = function() {
+  var begin_time = moment().utc().subtract('hours',3).format('YYYY-MM-DD%20HH:mm:ss');
+  var end_time = moment().utc().format('YYYY-MM-DD%20HH:mm:ss');
+
+  pull_tower(begin_time, end_time);
+};
+
 // May also use: http://whateverorigin.org/
-var pull_tower = function() {
+var pull_tower = function(begin_time, end_time) {
+  var url = 'http://metobs.ssec.wisc.edu/app/rig/tower/data/json?';
+  var begin = 'begin='+begin_time;
+  var end = '&end='+end_time;
+  var symbols = '&symbols=dir:spd:&separator=,&interval=00:00:05';
+
+  var full_url = url+begin+end+symbols;
+
   $.getJSON("http://query.yahooapis.com/v1/public/yql",
     {
-      q:      "select * from json where url=\"http://metobs.ssec.wisc.edu/app/rig/tower/data/json?begin=2014-02-17%2018:37:00&end=2014-02-17%2021:37:00&symbols=dir:spd:&separator=,&interval=00:00:05\"",
+      q:      "select * from json where url=\""+full_url+"\"",
       format: "json"
     },
     function(data){
       if (data.query.results) {
-        console.log('Got results!');
-        console.log(data.query.results.json);
         ascii = yql_json2ascii(data.query.results.json);
         draw_plots();
       } else {
@@ -430,4 +443,4 @@ var pull_tower = function() {
   );
 };
 
-pull_local();
+pull_last_3_hours();
