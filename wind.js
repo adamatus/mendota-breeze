@@ -266,6 +266,8 @@ var draw_summary = function() {
     .attr('class','plot-group');
 };
 
+var summary_data = [];
+
 var compute_summaries = function() {
   var out = [];
   var size = ascii.length/12;
@@ -283,10 +285,10 @@ var compute_summaries = function() {
 
     out.push(tmp);
   }
-  return out;
+  summary_data = out;
 };
 
-var add_summary_bars = function(summary_data) {
+var add_summary_bars = function() {
   var bar_groups = d3.select('#wind-summary g.plot-group').selectAll('.bar-group')
       .data(summary_data)
     .enter().append('svg:g')
@@ -315,7 +317,53 @@ var add_summary_bars = function(summary_data) {
       .attr('y2',function(d) { return speed_scale(d.spd_half); });
 };
 
-var add_summary_dir_arrows = function(summary_data) {
+var pad_x = function(d,i) {
+    if (i === 0) {
+      return summary_x(0);
+    } else if (i === (summary_data.length-1)) {
+      return summary_x(i+1);
+    } else {
+      return summary_x(i+0.5);
+    }
+};
+
+var speed_mean = d3.svg.line()
+  .interpolate('monotone')
+  .x(pad_x)
+  .y(function(d) { return speed_scale(d.spd_half); });
+
+var speed_extremes = d3.svg.area()
+  .interpolate('monotone')
+  .x(pad_x)
+  .y0(function(d) { return speed_scale(d.spd_min); })
+  .y1(function(d) { return speed_scale(d.spd_max); });
+
+var speed_quartiles = d3.svg.area()
+  .interpolate('monotone')
+  .x(pad_x)
+  .y0(function(d) { return speed_scale(d.spd_first); })
+  .y1(function(d) { return speed_scale(d.spd_third); });
+
+var add_summary_ribbons = function() {
+  var ribbon_group = d3.select('#wind-summary g.plot-group')
+      .append('svg:g')
+      .attr('class','ribbon-group');
+
+  ribbon_group.append('svg:path')
+      .style('fill','#deebf7')
+      .attr('d', speed_extremes(summary_data));
+
+  ribbon_group.append('svg:path')
+      .style('fill','#9ecae1')
+      .attr('d', speed_quartiles(summary_data));
+
+  ribbon_group.append('svg:path')
+      .style('stroke','#3182bd')
+      .style('stroke-width','2px')
+      .attr('d', speed_mean(summary_data));
+};
+
+var add_summary_dir_arrows = function() {
   var arrow_groups = d3.select('#wind-summary g.plot-group').selectAll('.arrow-group')
       .data(summary_data)
     .enter().append('svg:g')
@@ -384,9 +432,10 @@ var draw_plots = function() {
 
   draw_summary();
   update_timescale();
-  var summary_data = compute_summaries();
-  add_summary_bars(summary_data);
-  add_summary_dir_arrows(summary_data);
+  compute_summaries();
+  //add_summary_bars();
+  add_summary_ribbons();
+  add_summary_dir_arrows();
 
   draw_timeseries();
   update_timescale();
