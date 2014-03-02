@@ -516,4 +516,8 @@ var pull_tower = function(begin_time, end_time) {
   );
 };
 
-pull_last_3_hours();
+if (location.hash === "#debug") {
+  pull_local();
+} else {
+  pull_last_3_hours();
+}
