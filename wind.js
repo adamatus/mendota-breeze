@@ -96,6 +96,10 @@ var json2ascii = function(d) {
   return myascii;
 };
 
+var meters_per_sec2knots = function(d) {
+  return d * 1.94384;
+};
+
 var yql_json2ascii = function(d) {
   var myascii = [];
   out = {};
@@ -104,6 +108,7 @@ var yql_json2ascii = function(d) {
     out = {stamp: format.parse(time)};
     for (var j = 0; j < d.symbols.length; j++) {
       out[d.symbols[j]] = +d.data[i].json[j];
+      out.wind_speed = meters_per_sec2knots(out.wind_speed);
     }
     myascii.push(out);
   }
@@ -187,7 +192,10 @@ var draw_timeseries = function() {
     .attr("class", "y axis");
   y_axis_speed.append('svg:text')
     .text('Wind Speed')
-    .attr('transform','translate(-100,'+speed_scale(15)+')');
+    .attr('transform','translate(-100,'+speed_scale(18)+')');
+  y_axis_speed.append('svg:text')
+    .text('(knots)')
+    .attr('transform','translate(-100,'+speed_scale(12)+')');
   y_axis_speed.call(yAxisSpeed);
 
   var y_axis_dir = plot.append("g")
@@ -257,6 +265,9 @@ var draw_summary = function() {
   y_axis_speed.append('svg:text')
     .text('Wind Speed')
     .attr('transform','translate(-100,'+speed_scale(15)+')');
+  y_axis_speed.append('svg:text')
+    .text('(knots)')
+    .attr('transform','translate(-100,'+speed_scale(13)+')');
   y_axis_speed.append('svg:text')
     .text('Wind Direction')
     .attr('transform','translate(-100,'+(h+60)+')');
