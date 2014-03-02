@@ -1,3 +1,6 @@
+/* jshint undef: true, unused: true */
+/* global d3, moment, $, location, console */
+
 // Generic helper functions
 var mean = function(a) {
   var sum = 0;
@@ -89,7 +92,7 @@ var meters_per_sec2knots = function(d) {
 
 var yql_json2ascii = function(d) {
   var myascii = [];
-  out = {};
+  var out = {};
   for (var i = 0; i < d.data.length; i++) {
     var time = moment(d.stamps[i]).subtract('hours',6).format('YYYY-MM-DD HH:mm:ss');
     out = {stamp: format.parse(time)};
@@ -106,8 +109,7 @@ var yql_json2ascii = function(d) {
 
 var padding = 40,
     width = 1100,
-    height = 450,
-    started = false;
+    height = 450;
 
 var margins = [100, 200, 50, 200],
     mb = margins[0],
@@ -174,7 +176,7 @@ var draw_summary = function() {
     .attr('transform','translate(-100,'+(h+60)+')');
   y_axis_speed.call(yAxisSpeed);
 
-  var plotgroup = plot.append('g')
+  plot.append('g')
     .attr('class','plot-group');
 };
 
@@ -268,24 +270,24 @@ var add_summary_dir_arrows = function() {
   arrow_groups.append('svg:line')
       .style('stroke','#31a354')
       .style('stroke-width','2px')
-      .attr('x1',function(d,i) { return summary_x(0.5); })
-      .attr('x2',function(d,i) { return summary_x(0.5); })
-      .attr('y1',function(d) { return summary_x(0)-summary_x(0.4); })
-      .attr('y2',function(d) { return summary_x(0)+summary_x(0.4); });
+      .attr('x1',function() { return summary_x(0.5); })
+      .attr('x2',function() { return summary_x(0.5); })
+      .attr('y1',function() { return summary_x(0)-summary_x(0.4); })
+      .attr('y2',function() { return summary_x(0)+summary_x(0.4); });
   arrow_groups.append('svg:line')
       .style('stroke','#31a354')
       .style('stroke-width','2px')
-      .attr('x1',function(d,i) { return summary_x(0.35); })
-      .attr('x2',function(d,i) { return summary_x(0.5); })
-      .attr('y1',function(d) { return summary_x(0)-summary_x(0.3); })
-      .attr('y2',function(d) { return summary_x(0)-summary_x(0.4); });
+      .attr('x1',function() { return summary_x(0.35); })
+      .attr('x2',function() { return summary_x(0.5); })
+      .attr('y1',function() { return summary_x(0)-summary_x(0.3); })
+      .attr('y2',function() { return summary_x(0)-summary_x(0.4); });
   arrow_groups.append('svg:line')
       .style('stroke','#31a354')
       .style('stroke-width','2px')
-      .attr('x1',function(d,i) { return summary_x(0.5); })
-      .attr('x2',function(d,i) { return summary_x(0.65); })
-      .attr('y1',function(d) { return summary_x(0)-summary_x(0.4); })
-      .attr('y2',function(d) { return summary_x(0)-summary_x(0.3); });
+      .attr('x1',function() { return summary_x(0.5); })
+      .attr('x2',function() { return summary_x(0.65); })
+      .attr('y1',function() { return summary_x(0)-summary_x(0.4); })
+      .attr('y2',function() { return summary_x(0)-summary_x(0.3); });
 
 };
 
@@ -313,7 +315,6 @@ var pull_local = function() {
     draw_plots();
   });
 };
-
 
 var pull_last_3_hours = function() {
   var begin_time = moment().utc().subtract('hours',3).format('YYYY-MM-DD%20HH:mm:ss');
