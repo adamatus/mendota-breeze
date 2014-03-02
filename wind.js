@@ -23,39 +23,6 @@ var circ_mean = function(a) {
   return out > 0 ? out : out + 360;
 };
 
-var rolling_stat = function(o, col, stat, win_length, center) {
-  if(typeof(win_length)==='undefined') win_length = 12;
-  if(typeof(center)==='undefined') center = true;
-
-  if (win_length > 1) {
-    var out = [];
-
-    var return_col = function(d) { return d[col]; };
-    for (i = 0; i < (o.length-win_length+1); i++) {
-      var a = o.slice(i,i+win_length).map(return_col);
-      var stamp_loc = [];
-      if (center & win_length > 1) {
-        stamp_loc = i + Math.round(win_length/2);
-      } else {
-        stamp_loc = i + win_length-1;
-      }
-      var tmp_out = {stamp: o[stamp_loc].stamp};
-      tmp_out[col] = stat(a);
-      out.push(tmp_out);
-    }
-    return out;
-  }
-  return o;
-};
-
-var rolling_mean = function(o, col, win_length) {
-  return rolling_stat(o,col,mean,win_length);
-};
-
-var rolling_circmean = function(o, col, win_length) {
-  return rolling_stat(o,col,circ_mean,win_length);
-};
-
 var get_5_num_summary = function(a) {
   var arr = a.slice(0);
   arr.sort(d3.ascending);
@@ -116,20 +83,6 @@ var compute_summaries = function() {
 
 // This project specific helper functions
 
-var json2ascii = function(d) {
-  var myascii = [];
-  out = {};
-  for (var i = 0; i < d.data.length; i++) {
-    out = {stamp: format.parse(d.stamps[i])};
-    for (var j = 0; j < d.symbols.length; j++) {
-      out[d.symbols[j]] = d.data[i][j];
-    }
-
-    myascii.push(out);
-  }
-  return myascii;
-};
-
 var meters_per_sec2knots = function(d) {
   return d * 1.94384;
 };
@@ -164,10 +117,6 @@ var margins = [100, 200, 50, 200],
     w = width - (ml + mr),
     h = height - (mb + mt);
 
-var x = d3.scale.linear()
-  .domain([0,2160])
-  .range([0, w]);
-
 var time_scale = d3.time.scale()
   .range([0, w]);
 
@@ -175,97 +124,15 @@ var speed_scale = d3.scale.linear()
   .domain([0,30])
   .rangeRound([h, 0]);
 
-var dir_scale = d3.scale.linear()
-  .domain([0,360])
-  .rangeRound([h, 0]);
-
 var summary_x = d3.scale.linear()
   .domain([0,12])
   .range([0, w]);
 
-var xAxis = d3.svg.axis().scale(x).orient("top");
 var timeAxis = d3.svg.axis().scale(time_scale).orient("bottom");
 var yAxisSpeed = d3.svg.axis().scale(speed_scale).orient("left");
-var yAxisDir = d3.svg.axis().scale(dir_scale).tickValues([0,45,90,135,180,225,270,315,360]).orient("right");
 
 var format = d3.time.format("%Y-%m-%d %X");
 var ascii = [];
-
-// Full timeseries specific code
-var speed_line = d3.svg.line()
-  .interpolate('monotone')
-  .x(function(d,i) { return time_scale(d.stamp); })
-  .y(function(d) { return speed_scale(d.wind_speed); });
-
-var dir_line = d3.svg.line()
-  .interpolate('monotone')
-  .x(function(d,i) { return time_scale(d.stamp); })
-  .y(function(d) { return dir_scale(d.wind_direction); });
-
-var draw_timeseries = function() {
-  var windchart = d3.select("#wind-chart")
-      .append("svg:svg")
-      .attr('id','wind-chart')
-      .attr("width", width)
-      .attr("height", height+padding);
-
-  var plot = windchart.append('g')
-    .attr('id','plot')
-    .attr('transform','translate('+ml+','+mt+')');
-
-  var time_axis = plot.append("g")
-  .attr("class", "x axis")
-    .attr('transform','translate(0,'+h+')');
-  time_axis.append('svg:text')
-    .text('Last 3 Hours')
-    .attr('transform','translate('+(w/2)+',80)');
-  time_axis.call(timeAxis);
-
-  // Add y-axis
-  var y_axis_speed = plot.append("g")
-    .attr("class", "y axis");
-  y_axis_speed.append('svg:text')
-    .text('Wind Speed')
-    .attr('transform','translate(-100,'+speed_scale(18)+')');
-  y_axis_speed.append('svg:text')
-    .text('(knots)')
-    .attr('transform','translate(-100,'+speed_scale(12)+')');
-  y_axis_speed.call(yAxisSpeed);
-
-  var y_axis_dir = plot.append("g")
-    .attr("class", "y axis")
-    .attr('transform','translate('+w+',0)');
-  y_axis_dir.append('svg:text')
-    .text('Wind Direction')
-    .attr('transform','translate(100,'+speed_scale(15)+')');
-  y_axis_dir.call(yAxisDir);
-
-  var plotgroup = plot.append('g')
-    .attr('class','plot-group');
-};
-
-var plot_wind = function() {
-  var line_group = d3.select('#wind-chart .plot-group').append('svg:g')
-    .attr('class','line-group');
-
-  line_group.append('svg:path')
-      .attr('d', dir_line(ascii))
-      .style('stroke','blue')
-      .attr('class','dir');
-
-  line_group.append('svg:path')
-      .attr('d', speed_line(ascii))
-      .style('stroke','black')
-      .attr('class','speed');
-
-};
-
-var replot_wind = function(win_length) {
-  d3.select('.line-group .dir').transition()
-    .attr('d',dir_line(rolling_circmean(ascii,'wind_direction', win_length)));
-  d3.select('.line-group .speed').transition()
-    .attr('d',speed_line(rolling_mean(ascii,'wind_speed', win_length)));
-};
 
 var update_timescale = function () {
   time_scale.domain(d3.extent(ascii.map(function(d) { return d.stamp;})));
@@ -311,35 +178,6 @@ var draw_summary = function() {
     .attr('class','plot-group');
 };
 
-
-var add_summary_bars = function() {
-  var bar_groups = d3.select('#wind-summary g.plot-group').selectAll('.bar-group')
-      .data(summary_data)
-    .enter().append('svg:g')
-      .attr('class','bar-group');
-
-  bar_groups.append('svg:rect')
-      .attr('height', function(d) { return speed_scale(d.spd_min) - speed_scale(d.spd_max);})
-      .attr('width', summary_x(1))
-      .style('fill','#deebf7')
-      .attr('x', function(d,i) { return summary_x(i);})
-      .attr('y', function(d) { return speed_scale(d.spd_max) - speed_scale(30);});
-
-  bar_groups.append('svg:rect')
-      .attr('height', function(d) { return speed_scale(d.spd_first) - speed_scale(d.spd_third);})
-      .attr('width', summary_x(1))
-      .style('fill','#9ecae1')
-      .attr('x', function(d,i) { return summary_x(i);})
-      .attr('y', function(d) { return speed_scale(d.spd_third) - speed_scale(30);});
-
-  bar_groups.append('svg:line')
-      .style('stroke','#3182bd')
-      .style('stroke-width','2px')
-      .attr('x1',function(d,i) { return summary_x(i); })
-      .attr('x2',function(d,i) { return summary_x(i+1); })
-      .attr('y1',function(d) { return speed_scale(d.spd_half); })
-      .attr('y2',function(d) { return speed_scale(d.spd_half); });
-};
 
 var pad_x = function(d,i) {
     if (i === 0) {
@@ -457,16 +295,9 @@ var draw_plots = function() {
   draw_summary();
   update_timescale();
   compute_summaries();
-  //add_summary_bars();
   add_summary_ribbons();
   add_summary_dir_arrows();
-
-  draw_timeseries();
-  update_timescale();
-  plot_wind();
 };
-
-
 
 var pull_local = function() {
   d3.csv('ascii.txt', function(d) {
