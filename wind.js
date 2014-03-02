@@ -57,27 +57,61 @@ var rolling_circmean = function(o, col, win_length) {
 };
 
 var get_5_num_summary = function(a) {
-  a.sort(d3.ascending);
-  out = {};
-  out.spd_min = d3.min(a);
-  out.spd_first = d3.quantile(a,0.25);
-  out.spd_half = d3.median(a);
-  out.spd_third = d3.quantile(a,0.75);
-  out.spd_max = d3.max(a);
+  var arr = a.slice(0);
+  arr.sort(d3.ascending);
+  var out = [arr[0],
+         d3.quantile(arr,0.75),
+         d3.median(arr),
+         d3.quantile(arr,0.25),
+         arr[arr.length-1],
+  ];
   return out;
 };
 
-var get_circ_5_num_summary = function(a) {
-  // FIXME Need to compute proper min/max/first/third
-  a.sort(d3.ascending);
-  out = {};
-  out.dir_half = circ_mean(a);
-  out.dir_min = -20;
-  out.dir_max = 20;
-  out.dir_first = -10;
-  out.dir_third = 10;
+var circ_dist = function(a,b) {
+  return (a - b + 180) % 360 - 180;
+};
 
-  return out;
+var get_circ_5_num_summary = function(a) {
+  var arr = a.slice(0);
+  arr.sort(d3.ascending);
+  var tmp_mean = circ_mean(arr);
+  var diffs = arr.map(function(d) {
+    return circ_dist(tmp_mean,d);
+  });
+  var sum_diffs = get_5_num_summary(diffs);
+  sum_diffs[2] = tmp_mean;
+
+  return sum_diffs;
+};
+
+var summary_data = [];
+
+var compute_summaries = function() {
+  var out = [];
+  var size = ascii.length/12;
+  var starts = d3.range(0, ascii.length, size);
+
+  var get_speed = function(d) { return d.wind_speed; };
+  var get_dir = function(d) { return (d.wind_direction + 180) % 360; };
+
+  var filt_by_dir = function(d,i) {
+      return spd[i] > 2;
+  };
+
+  for (var i = 0; i < starts.length; i++) {
+    var b = ascii.slice(starts[i],starts[i]+size);
+    var spd = b.map(get_speed);
+    var out_tmp = {};
+    var tmp = get_5_num_summary(spd);
+    out_tmp.speed = tmp.slice(0);
+    var dir = b.map(get_dir);
+    var filt_dir = dir.filter(filt_by_dir);
+    tmp = get_circ_5_num_summary(filt_dir);
+    out_tmp.dir = tmp.slice(0);
+    out.push(out_tmp);
+  }
+  summary_data = out;
 };
 
 // This project specific helper functions
@@ -277,27 +311,6 @@ var draw_summary = function() {
     .attr('class','plot-group');
 };
 
-var summary_data = [];
-
-var compute_summaries = function() {
-  var out = [];
-  var size = ascii.length/12;
-  var starts = d3.range(0, ascii.length, size);
-
-  var get_speed = function(d) { return d.wind_speed; };
-  var get_dir = function(d) { return d.wind_direction + 180; };
-
-  for (var i = 0; i < starts.length; i++) {
-    var b = ascii.slice(starts[i],starts[i]+size);
-    var spd = b.map(get_speed);
-    var tmp = get_5_num_summary(spd);
-    var dir = b.map(get_dir);
-    $().extend(tmp,get_circ_5_num_summary(dir));
-
-    out.push(tmp);
-  }
-  summary_data = out;
-};
 
 var add_summary_bars = function() {
   var bar_groups = d3.select('#wind-summary g.plot-group').selectAll('.bar-group')
@@ -341,19 +354,19 @@ var pad_x = function(d,i) {
 var speed_mean = d3.svg.line()
   .interpolate('monotone')
   .x(pad_x)
-  .y(function(d) { return speed_scale(d.spd_half); });
+  .y(function(d) { return speed_scale(d.speed[2]); });
 
 var speed_extremes = d3.svg.area()
   .interpolate('monotone')
   .x(pad_x)
-  .y0(function(d) { return speed_scale(d.spd_min); })
-  .y1(function(d) { return speed_scale(d.spd_max); });
+  .y0(function(d) { return speed_scale(d.speed[0]); })
+  .y1(function(d) { return speed_scale(d.speed[4]); });
 
 var speed_quartiles = d3.svg.area()
   .interpolate('monotone')
   .x(pad_x)
-  .y0(function(d) { return speed_scale(d.spd_first); })
-  .y1(function(d) { return speed_scale(d.spd_third); });
+  .y0(function(d) { return speed_scale(d.speed[1]); })
+  .y1(function(d) { return speed_scale(d.speed[3]); });
 
 var add_summary_ribbons = function() {
   var ribbon_group = d3.select('#wind-summary g.plot-group')
@@ -380,27 +393,27 @@ var add_summary_dir_arrows = function() {
     .enter().append('svg:g')
       .attr('class','arrow-group')
       .attr('transform',function(d,i) {
-        return 'translate('+summary_x(i)+','+(h+60)+') rotate('+d.dir_half+','+summary_x(0.5)+',0)';
+        return 'translate('+summary_x(i)+','+(h+60)+') rotate('+d.dir[2]+','+summary_x(0.5)+',0)';
       });
 
   var outer_arc = d3.svg.arc()
         .innerRadius(0)
         .outerRadius(summary_x(0.85))
         .startAngle(function(d) {
-          return deg2rad(d.dir_min);
+          return deg2rad(d.dir[0]);
         })
         .endAngle(function(d) {
-          return deg2rad(d.dir_max);
+          return deg2rad(d.dir[4]);
         });
 
   var inner_arc = d3.svg.arc()
         .innerRadius(0)
         .outerRadius(summary_x(0.85))
         .startAngle(function(d) {
-          return deg2rad(d.dir_first);
+          return deg2rad(d.dir[1]);
         })
         .endAngle(function(d) {
-          return deg2rad(d.dir_third);
+          return deg2rad(d.dir[3]);
         });
 
   arrow_groups.append("path")
