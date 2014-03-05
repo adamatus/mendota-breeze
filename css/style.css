@@ -47,3 +47,9 @@ text {
   stroke: #000;
   stroke-width: 1px;
 }
+
+line.arrows {
+  stroke: #a1d99b;
+  stroke-width: 3px;
+  opacity: .2;
+}
