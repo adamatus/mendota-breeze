@@ -1,5 +1,5 @@
 /* jshint undef: true, unused: true */
-/* global d3, moment, $, location, console */
+/* global d3, moment, $, location, console, window */
 
 // Generic helper functions
 var mean = function(a) {
@@ -348,8 +348,35 @@ var pull_tower = function(begin_time, end_time) {
   );
 };
 
+function getQueryVariable(variable)
+{
+       var query = window.location.search.substring(1);
+       var vars = query.split("&");
+       for (var i=0;i<vars.length;i++) {
+                      var pair = vars[i].split("=");
+                      if(pair[0] == variable){return pair[1];}
+              }
+       return(null);
+}
+
 if (location.hash === "#debug") {
+  console.log('Using local data...');
   pull_local();
 } else {
-  pull_last_3_hours();
+  var start = getQueryVariable('start');
+  var end = getQueryVariable('end');
+
+  if ((start !== null) && (end !== null)) {
+    console.log('Pull historical data...');
+
+    var begin_time = moment(start, 'YYYY-MM-DD%20HH:mm:ss');
+    var end_time = moment(end, 'YYYY-MM-DD%20HH:mm:ss');
+    begin_time = begin_time.utc().format('YYYY-MM-DD%20HH:mm:ss');
+    end_time = end_time.utc().format('YYYY-MM-DD%20HH:mm:ss');
+
+    pull_tower(begin_time, end_time);
+  } else {
+    console.log('Pull last 3 hours...');
+    pull_last_3_hours();
+  }
 }
