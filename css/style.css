@@ -46,6 +46,13 @@ text {
   fill: none;
   stroke: #000;
   stroke-width: 1px;
+  z-index: 20;
+}
+
+.y.axis .tick line {
+  fill: none;
+  stroke: #ddd;
+  stroke-width: 1px;
 }
 
 line.arrows {

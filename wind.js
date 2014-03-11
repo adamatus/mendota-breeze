@@ -142,13 +142,6 @@ var draw_summary = function() {
     .attr('id','plot')
     .attr('transform','translate('+ml+','+mt+')');
 
-  var time_axis = plot.append("g")
-  .attr("class", "x axis")
-    .attr('transform','translate(0,'+h+')');
-  time_axis.append('svg:text')
-    .text('Last 3 Hours')
-    .attr('transform','translate('+(w/2)+',100)');
-  time_axis.call(timeAxis);
 
   // Add y-axis
   var y_axis_speed = plot.append("g")
@@ -164,8 +157,17 @@ var draw_summary = function() {
     .attr('transform','translate(-100,'+(h+60)+')');
   y_axis_speed.call(yAxisSpeed);
 
+  var time_axis = plot.append("g")
+  .attr("class", "x axis")
+    .attr('transform','translate(0,'+h+')');
+  time_axis.append('svg:text')
+    .text('Last 3 Hours')
+    .attr('transform','translate('+(w/2)+',100)');
+  time_axis.call(timeAxis);
+
   plot.append('g')
     .attr('class','plot-group');
+
 };
 
 
