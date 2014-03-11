@@ -230,7 +230,7 @@ var add_overlapping_dir_arrows = function() {
       .attr('x1',0)
       .attr('x2',function(d) { return 25*Math.sin(deg2rad(d)); })
       .attr('y1',0)
-      .attr('y2',function(d) { return 25*Math.cos(deg2rad(d)); });
+      .attr('y2',function(d) { return -25*Math.cos(deg2rad(d)); });
 
   // Mean direction line
   arrow_groups.append('svg:line')
@@ -239,23 +239,23 @@ var add_overlapping_dir_arrows = function() {
       .attr('x1',0)
       .attr('x2',function(d) { return 25*Math.sin(deg2rad(d.dir_mean)); })
       .attr('y1',0)
-      .attr('y2',function(d) { return 25*Math.cos(deg2rad(d.dir_mean)); });
+      .attr('y2',function(d) { return -25*Math.cos(deg2rad(d.dir_mean)); });
 
   arrow_groups.append('svg:line')
       .style('stroke','#31a354')
       .style('stroke-width','3px')
       .attr('x1',function(d) { return 18*Math.sin(deg2rad(d.dir_mean-20)); })
       .attr('x2',function(d) { return 25*Math.sin(deg2rad(d.dir_mean)); })
-      .attr('y1',function(d) { return 18*Math.cos(deg2rad(d.dir_mean-20)); })
-      .attr('y2',function(d) { return 25*Math.cos(deg2rad(d.dir_mean)); });
+      .attr('y1',function(d) { return -18*Math.cos(deg2rad(d.dir_mean-20)); })
+      .attr('y2',function(d) { return -25*Math.cos(deg2rad(d.dir_mean)); });
 
   arrow_groups.append('svg:line')
       .style('stroke','#31a354')
       .style('stroke-width','3px')
       .attr('x1',function(d) { return 18*Math.sin(deg2rad(d.dir_mean+20)); })
       .attr('x2',function(d) { return 25*Math.sin(deg2rad(d.dir_mean)); })
-      .attr('y1',function(d) { return 18*Math.cos(deg2rad(d.dir_mean+20)); })
-      .attr('y2',function(d) { return 25*Math.cos(deg2rad(d.dir_mean)); });
+      .attr('y1',function(d) { return -18*Math.cos(deg2rad(d.dir_mean+20)); })
+      .attr('y2',function(d) { return -25*Math.cos(deg2rad(d.dir_mean)); });
 };
 
 // Initial callback on data pull
