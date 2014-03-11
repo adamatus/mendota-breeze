@@ -1,0 +1,62 @@
+svg {
+  font-family: "Trebuchet MS";
+  font-weight: lighter;
+}
+
+.axis {
+  stroke: black;
+  shape-rendering: crispEdges;
+}
+
+path {
+  fill: none;
+  stroke-width: 1px;
+}
+
+text {
+    text-anchor: middle;
+}
+
+.x.axis line {
+  stroke: #000;
+  stroke-width: 1px;
+}
+
+.x.axis line.tick {
+  stroke: none;
+  stroke-width: 1px;
+}
+
+.bars {
+    fill: steelblue;
+    stroke: #777;
+}
+
+.x.axis .minor {
+  stroke-opacity: .5;
+}
+
+.x.axis path {
+  fill: none;
+  stroke: #000;
+  stroke-width: 1px;
+}
+
+.y.axis line, .y.axis path {
+  fill: none;
+  stroke: #000;
+  stroke-width: 1px;
+  z-index: 20;
+}
+
+.y.axis .tick line {
+  fill: none;
+  stroke: #ddd;
+  stroke-width: 1px;
+}
+
+line.arrows {
+  stroke: #a1d99b;
+  stroke-width: 3px;
+  opacity: .2;
+}
