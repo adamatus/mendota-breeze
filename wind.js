@@ -118,7 +118,8 @@ var summary_x = d3.scale.linear()
   .range([0, w]);
 
 var timeAxis = d3.svg.axis().scale(time_scale).orient("bottom");
-var yAxisSpeed = d3.svg.axis().scale(speed_scale).orient("left");
+var yAxisSpeed = d3.svg.axis().scale(speed_scale).orient("left")
+      .innerTickSize(-w);
 
 var format = d3.time.format("%Y-%m-%d %X");
 var ascii = [];
@@ -202,14 +203,17 @@ var add_summary_ribbons = function() {
 
   ribbon_group.append('svg:path')
       .style('fill','#deebf7')
+      .style('opacity','.8')
       .attr('d', speed_extremes(summary_data));
 
   ribbon_group.append('svg:path')
       .style('fill','#9ecae1')
+      .style('opacity','.8')
       .attr('d', speed_quartiles(summary_data));
 
   ribbon_group.append('svg:path')
       .style('stroke','#3182bd')
+      .style('opacity','.8')
       .style('stroke-width','2px')
       .attr('d', speed_mean(summary_data));
 };
