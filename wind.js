@@ -98,7 +98,7 @@ var padding = 40,
     width = 1100,
     height = 450;
 
-var margins = [100, 200, 50, 200],
+var margins = [80, 80, 10, 10],
     mb = margins[0],
     ml = margins[1],
     mt = margins[2],
@@ -118,8 +118,7 @@ var summary_x = d3.scale.linear()
   .range([0, w]);
 
 var timeAxis = d3.svg.axis().scale(time_scale).orient("bottom");
-var yAxisSpeed = d3.svg.axis().scale(speed_scale).orient("left")
-      .innerTickSize(-w);
+var yAxisSpeed = d3.svg.axis().scale(speed_scale).orient("left");
 
 var format = d3.time.format("%Y-%m-%d %X");
 var ascii = [];
@@ -132,6 +131,15 @@ var update_timescale = function () {
 
 // Summary plot specific code
 var draw_summary = function() {
+  width = $('#container').width();
+  height = $(window).height()*0.7;
+
+  w = width - (ml + mr);
+  h = height - (mb + mt);
+  speed_scale.rangeRound([h,0]);
+  summary_x.range([0, w]);
+  time_scale.range([0, w]);
+
   var windchart = d3.select("#wind-summary")
       .append("svg:svg")
       .attr('id','wind-summary')
@@ -142,20 +150,25 @@ var draw_summary = function() {
     .attr('id','plot')
     .attr('transform','translate('+ml+','+mt+')');
 
-
   // Add y-axis
   var y_axis_speed = plot.append("g")
     .attr("class", "y axis");
   y_axis_speed.append('svg:text')
-    .text('Wind Speed')
-    .attr('transform','translate(-100,'+speed_scale(15)+')');
+    .text('Wind')
+    .attr('transform','translate(-50,'+speed_scale(17)+')');
+  y_axis_speed.append('svg:text')
+    .text('Speed')
+    .attr('transform','translate(-50,'+speed_scale(15)+')');
   y_axis_speed.append('svg:text')
     .text('(knots)')
-    .attr('transform','translate(-100,'+speed_scale(13)+')');
+    .attr('transform','translate(-50,'+speed_scale(13)+')');
   y_axis_speed.append('svg:text')
-    .text('Wind Direction')
-    .attr('transform','translate(-100,'+(h+60)+')');
-  y_axis_speed.call(yAxisSpeed);
+    .text('Wind')
+    .attr('transform','translate(-50,'+(h+50)+')');
+  y_axis_speed.append('svg:text')
+    .text('Dir')
+    .attr('transform','translate(-50,'+(h+70)+')');
+  y_axis_speed.call(yAxisSpeed.innerTickSize(-w));
 
   var time_axis = plot.append("g")
   .attr("class", "x axis")

@@ -5,11 +5,25 @@
     <link href="css/style.css" media="all" rel="stylesheet" type="text/css" />
     <script src="lib/moment.min.js" type="text/javascript"></script>
     <script src="lib/d3/d3.min.js" type="text/javascript"></script>
-    <script src="lib/jquery/dist/jquery.min.js" type="text/javascript"></script>
+    <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap-theme.min.css">
+    <style>
+      #container {
+        padding-top: 20px;
+      }
+    </style>
   </head>
   <body>
-    <div id='wind-summary'></div>
-    <div id='wind-chart'></div>
+    <div class="container" id='container'>
+      <div class="alert alert-info alert-dismissable">
+          <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
+          <strong>Buoy down!</strong> Using data from the AOSS tower
+      </div>
+      <h2 class="text-center">Lake Mendota Breeze</h2>
+      <div id='wind-summary'></div>
+    </div>
+    <script src="lib/jquery/dist/jquery.min.js" type="text/javascript"></script>
+    <script src="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
     <script src="wind.js" type="text/javascript"></script>
   </body>
 </html>
