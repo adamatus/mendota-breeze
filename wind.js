@@ -40,9 +40,12 @@ var get_5_num_summary = function(a) {
 
 var summary_data = [];
 
+var win_size = 15,
+    win_num = 60*3/win_size;
+
 var compute_summaries = function() {
   var out = [];
-  var size = ascii.length/12;
+  var size = ascii.length/win_num;
   var starts = d3.range(0, ascii.length, size);
 
   var get_speed = function(d) { return d.wind_speed; };
@@ -111,7 +114,7 @@ var speed_scale = d3.scale.linear()
   .rangeRound([h, 0]);
 
 var summary_x = d3.scale.linear()
-  .domain([0,12])
+  .domain([0,win_num])
   .range([0, w]);
 
 var timeAxis = d3.svg.axis().scale(time_scale).orient("bottom");
