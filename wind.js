@@ -119,6 +119,7 @@ var summary_x = d3.scale.linear()
 
 var timeAxis = d3.svg.axis().scale(time_scale).orient("bottom").ticks(6);
 var yAxisSpeed = d3.svg.axis().scale(speed_scale).orient("left");
+var yAxisGrid = d3.svg.axis().scale(speed_scale).orient("left");
 
 var format = d3.time.format("%Y-%m-%d %X");
 var ascii = [];
@@ -150,6 +151,21 @@ var draw_summary = function() {
     .attr('id','plot')
     .attr('transform','translate('+ml+','+mt+')');
 
+  plot.append('svg:rect')
+    .attr('x',0)
+    .attr('y',0)
+    .attr('width',w)
+    .attr('height',h)
+    .attr('class','plot-bg');
+
+  // Add y-axis grid lines
+  var y_grid_speed = plot.append("g")
+    .attr("class", "y grid");
+  y_grid_speed.call(yAxisGrid.tickSize(-w));
+
+  var pg = plot.append('g')
+    .attr('class','plot-group');
+
   // Add y-axis
   var y_axis_speed = plot.append("g")
     .attr("class", "y axis");
@@ -168,7 +184,7 @@ var draw_summary = function() {
   y_axis_speed.append('svg:text')
     .text('Dir')
     .attr('transform','translate(-50,'+(h+70)+')');
-  y_axis_speed.call(yAxisSpeed.innerTickSize(-w));
+  y_axis_speed.call(yAxisSpeed);
 
   var time_axis = plot.append("g")
   .attr("class", "x axis")
@@ -178,8 +194,6 @@ var draw_summary = function() {
     .attr('transform','translate('+(w/2)+',100)');
   time_axis.call(timeAxis);
 
-  plot.append('g')
-    .attr('class','plot-group');
 
 };
 
@@ -218,17 +232,17 @@ var add_summary_ribbons = function() {
 
   ribbon_group.append('svg:path')
       .style('fill','#deebf7')
-      .style('opacity','.8')
+      .style('opacity','.6')
       .attr('d', speed_extremes(summary_data));
 
   ribbon_group.append('svg:path')
       .style('fill','#9ecae1')
-      .style('opacity','.8')
+      .style('opacity','.6')
       .attr('d', speed_quartiles(summary_data));
 
   ribbon_group.append('svg:path')
       .style('stroke','#3182bd')
-      .style('opacity','.8')
+      .style('opacity','.6')
       .style('stroke-width','2px')
       .attr('d', speed_mean(summary_data));
 };
