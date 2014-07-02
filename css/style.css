@@ -1,6 +1,6 @@
 svg {
-  font-family: "Trebuchet MS";
-  font-weight: lighter;
+  font-family: "Helvetica Neue";
+  letter-spacing: 20%;
 }
 
 .axis {
@@ -15,6 +15,7 @@ path {
 
 text {
     text-anchor: middle;
+    stroke: none;
 }
 
 .x.axis line {

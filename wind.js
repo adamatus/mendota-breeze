@@ -117,7 +117,7 @@ var summary_x = d3.scale.linear()
   .domain([0,win_num])
   .range([0, w]);
 
-var timeAxis = d3.svg.axis().scale(time_scale).orient("bottom");
+var timeAxis = d3.svg.axis().scale(time_scale).orient("bottom").ticks(6);
 var yAxisSpeed = d3.svg.axis().scale(speed_scale).orient("left");
 
 var format = d3.time.format("%Y-%m-%d %X");
