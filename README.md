@@ -3,7 +3,7 @@ mendota-breeze
 
 As a wind-junky (sailer/kiter/windersurfer), I'm always interested in the current wind conditions.
 For me, that's the wind on Lake Mendota in Madison, WI.  The Space Science and Engineering Center (SSEC)
-and Atmospheric and Osceanic Sciences (AOC) department at the University of Wisconsin-Madison maintain 
+and Atmospheric and Oceanic Sciences (AOC) department at the University of Wisconsin-Madison maintain 
 several instruments that measure the current weather and wind in the area.  This data is freely provided 
 at http://metobs.ssec.wisc.edu/buoy/
 
