@@ -81,7 +81,9 @@ var yql_json2ascii = function(d) {
   var myascii = [];
   var out = {};
   for (var i = 0; i < d.data.length; i++) {
-    var time = moment(d.stamps[i]).subtract('hours',6).format('YYYY-MM-DD HH:mm:ss');
+    // FIXME This time code break with daylight savings...
+    //var time = moment(d.stamps[i]).subtract('hours',6).format('YYYY-MM-DD HH:mm:ss');
+    var time = moment(d.stamps[i]).subtract('hours',5).format('YYYY-MM-DD HH:mm:ss');
     out = {stamp: format.parse(time)};
     for (var j = 0; j < d.symbols.length; j++) {
       out[d.symbols[j]] = +d.data[i].json[j];
