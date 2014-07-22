@@ -8,12 +8,20 @@
   </head>
   <body>
     <main>
-      <div class="container" id='container'>
+      <div class="container text-center" id='container'>
         <div class="alert alert-info alert-dismissable" style="display: none;">
             <button type="button" class="close" data-dismiss="alert" aria-hidden="true">&times;</button>
             <strong>Buoy down!</strong> Using data from the AOSS tower
         </div>
         <h2 class="text-center">Lake Mendota Breeze</h2>
+        <div class="btn-group text-center" data-toggle="buttons">
+          <label class="btn btn-primary active" id="buoyLabel">
+            <input type="radio" name="options" id="buoyData" checked>Buoy
+          </label>
+          <label class="btn btn-primary" id="towerLabel">
+            <input type="radio" name="options" id="towerData">Tower
+          </label>
+        </div>
         <div class="loading btn btn-primary btn-large">
             <p>Fetching data... <i class="fa fa-refresh fa-spin"></i></p>
         </div>

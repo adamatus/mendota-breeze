@@ -45,8 +45,8 @@ var win_size = 15,
 
 var compute_summaries = function() {
   var out = [];
-  var size = ascii.length/win_num;
-  var starts = d3.range(0, ascii.length, size);
+  var size = data[source].length/win_num;
+  var starts = d3.range(0, data[source].length, size);
 
   var get_speed = function(d) { return d.wind_speed; };
   var get_dir = function(d) { return (d.wind_direction + 180) % 360; };
@@ -56,7 +56,7 @@ var compute_summaries = function() {
   };
 
   for (var i = 0; i < starts.length; i++) {
-    var b = ascii.slice(starts[i],starts[i]+size);
+    var b = data[source].slice(starts[i],starts[i]+size);
     var spd = b.map(get_speed);
     var out_tmp = {};
     var tmp = get_5_num_summary(spd);
@@ -66,6 +66,7 @@ var compute_summaries = function() {
     var filt_dir = dir.filter(filt_by_dir);
     out_tmp.all_dirs = filt_dir;
     out_tmp.dir_mean = circ_mean(filt_dir);
+    out_tmp.timepoint = i;
     out.push(out_tmp);
   }
   summary_data = out;
@@ -129,10 +130,9 @@ var yAxisSpeed = d3.svg.axis().scale(speed_scale).orient("left");
 var yAxisGrid = d3.svg.axis().scale(speed_scale).orient("left");
 
 var format = d3.time.format("%Y-%m-%d %X");
-var ascii = [];
 
 var update_timescale = function () {
-  time_scale.domain(d3.extent(ascii.map(function(d) { return d.stamp;})));
+  time_scale.domain(d3.extent(data[source].map(function(d) { return d.stamp;})));
   d3.select('.x.axis').transition().call(timeAxis);
 };
 
@@ -240,23 +240,26 @@ var add_summary_ribbons = function() {
   ribbon_group.append('svg:path')
       .style('fill','#deebf7')
       .style('opacity','.6')
+      .attr('id','speed-extremes')
       .attr('d', speed_extremes(summary_data));
 
   ribbon_group.append('svg:path')
       .style('fill','#9ecae1')
       .style('opacity','.6')
+      .attr('id','speed-quartiles')
       .attr('d', speed_quartiles(summary_data));
 
   ribbon_group.append('svg:path')
       .style('stroke','#3182bd')
       .style('opacity','.6')
+      .attr('id','speed-mean')
       .style('stroke-width','2px')
       .attr('d', speed_mean(summary_data));
 };
 
 var add_overlapping_dir_arrows = function() {
   var arrow_groups = d3.select('#wind-summary g.plot-group').selectAll('.arrow-group')
-      .data(summary_data)
+      .data(summary_data, function(d) { return d.timepoint; })
     .enter().append('svg:g')
       .attr('class','arrow-group')
       .attr('transform',function(d,i) {
@@ -279,6 +282,7 @@ var add_overlapping_dir_arrows = function() {
   arrow_groups.append('svg:line')
       .style('stroke','#31a354')
       .style('stroke-width','3px')
+      .attr('class','dir-mean-line')
       .attr('x1',0)
       .attr('x2',function(d) { return 25*Math.sin(deg2rad(d.dir_mean)); })
       .attr('y1',0)
@@ -287,6 +291,7 @@ var add_overlapping_dir_arrows = function() {
   arrow_groups.append('svg:line')
       .style('stroke','#31a354')
       .style('stroke-width','3px')
+      .attr('class','dir-arrow-head1')
       .attr('x1',function(d) { return 18*Math.sin(deg2rad(d.dir_mean-20)); })
       .attr('x2',function(d) { return 25*Math.sin(deg2rad(d.dir_mean)); })
       .attr('y1',function(d) { return -18*Math.cos(deg2rad(d.dir_mean-20)); })
@@ -295,6 +300,7 @@ var add_overlapping_dir_arrows = function() {
   arrow_groups.append('svg:line')
       .style('stroke','#31a354')
       .style('stroke-width','3px')
+      .attr('class','dir-arrow-head2')
       .attr('x1',function(d) { return 18*Math.sin(deg2rad(d.dir_mean+20)); })
       .attr('x2',function(d) { return 25*Math.sin(deg2rad(d.dir_mean)); })
       .attr('y1',function(d) { return -18*Math.cos(deg2rad(d.dir_mean+20)); })
@@ -304,13 +310,88 @@ var add_overlapping_dir_arrows = function() {
 // Draw the initial plot frame
 draw_summary();
 
+var never_drawn = true;
+
 // Initial callback on data pull
 var draw_plots = function() {
-  update_timescale();
   compute_summaries();
-  add_summary_ribbons();
-  add_overlapping_dir_arrows();
+  if (never_drawn) {
+    update_timescale();
+    add_summary_ribbons();
+    add_overlapping_dir_arrows();
+    never_drawn = false;
+  } else {
+    console.log('update ribbons');
+    update_summary_ribbons();
+    console.log('update arrows');
+    update_overlapping_dir_arrows();
+  }
   $('.loading').hide();
+};
+
+var update_summary_ribbons = function() {
+  d3.select('#speed-extremes').transition()
+      .attr('d', speed_extremes(summary_data));
+
+  d3.select('#speed-quartiles').transition()
+      .attr('d', speed_quartiles(summary_data));
+
+  d3.select('#speed-mean').transition()
+      .attr('d', speed_mean(summary_data));
+};
+
+var update_overlapping_dir_arrows = function() {
+  var arrow_groups = d3.select('#wind-summary g.plot-group').selectAll('.arrow-group')
+      .data(summary_data, function(d) { return d.timepoint; });
+    //.enter().append('svg:g')
+    //  .attr('class','arrow-group')
+    //  .attr('transform',function(d,i) {
+    //    return 'translate('+summary_x(i+0.5)+','+(h+54)+')';
+    //  });
+
+  arrow_groups.selectAll('line.arrows')
+      .data(function(d) {
+        console.log(d);
+        return d.all_dirs;
+      })
+      .transition()
+      .attr('x2',function(d) { return 25*Math.sin(deg2rad(d)); })
+      .attr('y2',function(d) { return -25*Math.cos(deg2rad(d)); });
+    //.enter().append('svg:line')
+    //  .attr('class','arrows')
+    //  .attr('x1',0)
+    //  .attr('y1',0)
+
+  // Mean direction line
+  //arrow_groups.append('svg:line')
+  //    .style('stroke','#31a354')
+  //    .style('stroke-width','3px')
+  //    .attr('x1',0)
+  //    .attr('y1',0)
+    arrow_groups.select('.dir-mean-line')
+      .transition()
+      .attr('x2',function(d) { return 25*Math.sin(deg2rad(d.dir_mean)); })
+      .attr('y2',function(d) { return -25*Math.cos(deg2rad(d.dir_mean)); });
+
+  //arrow_groups.append('svg:line')
+  //    .style('stroke','#31a354')
+  //    .style('stroke-width','3px')
+    arrow_groups.select('.dir-arrow-head1')
+      .transition()
+      .attr('x1',function(d) { return 18*Math.sin(deg2rad(d.dir_mean-20)); })
+      .attr('x2',function(d) { return 25*Math.sin(deg2rad(d.dir_mean)); })
+      .attr('y1',function(d) { return -18*Math.cos(deg2rad(d.dir_mean-20)); })
+      .attr('y2',function(d) { return -25*Math.cos(deg2rad(d.dir_mean)); });
+
+  //arrow_groups.append('svg:line')
+  //    .style('stroke','#31a354')
+  //    .style('stroke-width','3px')
+    arrow_groups.select('.dir-arrow-head2')
+      .transition()
+      .attr('x1',function(d) { return 18*Math.sin(deg2rad(d.dir_mean+20)); })
+      .attr('x2',function(d) { return 25*Math.sin(deg2rad(d.dir_mean)); })
+      .attr('y1',function(d) { return -18*Math.cos(deg2rad(d.dir_mean+20)); })
+      .attr('y2',function(d) { return -25*Math.cos(deg2rad(d.dir_mean)); });
 };
 
 var pull_local = function() {
@@ -323,21 +404,30 @@ var pull_local = function() {
       //pressure: +d.pressure
     };
   }, function(error, rows) {
-    ascii = rows;
+    data[source] = rows;
     draw_plots();
   });
 };
 
-var pull_last_3_hours = function() {
-  var begin_time = moment().utc().subtract('hours',3).format('YYYY-MM-DD%20HH:mm:ss');
-  var end_time = moment().utc().format('YYYY-MM-DD%20HH:mm:ss');
 
-  //pull_data('rig/tower',begin_time, end_time);
-  pull_data('mendota/buoy',begin_time, end_time);
+var begin_time, end_time;
+
+var pull_last_3_hours = function() {
+  // Only get the last 3 hours once, reused this time range for data source changes
+  if (begin_time === undefined) {
+    begin_time = moment().utc().subtract('hours',3).format('YYYY-MM-DD%20HH:mm:ss');
+    end_time = moment().utc().format('YYYY-MM-DD%20HH:mm:ss');
+  }
+
+  pull_data(source,begin_time, end_time);
 };
+
+var data = {'mendota/buoy':[],'rig/tower':[]};
+var source = 'mendota/buoy';
 
 // May also use: http://whateverorigin.org/
 var pull_data = function(which,begin_time, end_time) {
+  $('.loading').show();
   var url = 'http://metobs.ssec.wisc.edu/app/'+which+'/data/json?';
   var begin = 'begin='+begin_time;
   var end = '&end='+end_time;
@@ -350,9 +440,10 @@ var pull_data = function(which,begin_time, end_time) {
       q:      "select * from json where url=\""+full_url+"\"",
       format: "json"
     },
-    function(data){
-      if (data.query.results) {
-        ascii = yql_json2ascii(data.query.results.json);
+    function(qdata){
+      if (qdata.query.results) {
+        var ascii = yql_json2ascii(qdata.query.results.json);
+        data[which] = ascii.slice();
         draw_plots();
       } else {
         console.log('Did not get results!');
@@ -393,3 +484,23 @@ if (location.hash === "#debug") {
     pull_last_3_hours();
   }
 }
+
+$('#buoyLabel').on('click',function() {
+  source = 'mendota/buoy';
+  switch_data();
+});
+
+$('#towerLabel').on('click',function() {
+  source = 'rig/tower';
+  switch_data();
+});
+
+var switch_data = function() {
+  if (data[source].length === 0) {
+    console.log('fetching new data');
+    pull_last_3_hours();
+  } else {
+    console.log('update plot');
+    draw_plots();
+  }
+};
