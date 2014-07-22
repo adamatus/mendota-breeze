@@ -81,10 +81,17 @@ var yql_json2ascii = function(d) {
   var myascii = [];
   var out = {};
   for (var i = 0; i < d.data.length; i++) {
-    var time = moment(d.stamps[i]).subtract('hours',6).format('YYYY-MM-DD HH:mm:ss');
+    // FIXME This time code break with daylight savings...
+    //var time = moment(d.stamps[i]).subtract('hours',6).format('YYYY-MM-DD HH:mm:ss');
+    var time = moment(d.stamps[i]).subtract('hours',5).format('YYYY-MM-DD HH:mm:ss');
     out = {stamp: format.parse(time)};
     for (var j = 0; j < d.symbols.length; j++) {
       out[d.symbols[j]] = +d.data[i].json[j];
+      // Fix the column names FIXME: Delete old columns
+      if (out['WIND_DIRECTION_2.0'] !== undefined) {
+        out['wind_direction'] = out['WIND_DIRECTION_2.0'];
+        out['wind_speed'] = out['WIND_SPEED_2.0'];
+      }
       out.wind_speed = meters_per_sec2knots(out.wind_speed);
     }
     myascii.push(out);
@@ -294,14 +301,16 @@ var add_overlapping_dir_arrows = function() {
       .attr('y2',function(d) { return -25*Math.cos(deg2rad(d.dir_mean)); });
 };
 
+// Draw the initial plot frame
+draw_summary();
+
 // Initial callback on data pull
 var draw_plots = function() {
-
-  draw_summary();
   update_timescale();
   compute_summaries();
   add_summary_ribbons();
   add_overlapping_dir_arrows();
+  $('.loading').hide();
 };
 
 var pull_local = function() {
@@ -323,12 +332,13 @@ var pull_last_3_hours = function() {
   var begin_time = moment().utc().subtract('hours',3).format('YYYY-MM-DD%20HH:mm:ss');
   var end_time = moment().utc().format('YYYY-MM-DD%20HH:mm:ss');
 
-  pull_tower(begin_time, end_time);
+  //pull_data('rig/tower',begin_time, end_time);
+  pull_data('mendota/buoy',begin_time, end_time);
 };
 
 // May also use: http://whateverorigin.org/
-var pull_tower = function(begin_time, end_time) {
-  var url = 'http://metobs.ssec.wisc.edu/app/rig/tower/data/json?';
+var pull_data = function(which,begin_time, end_time) {
+  var url = 'http://metobs.ssec.wisc.edu/app/'+which+'/data/json?';
   var begin = 'begin='+begin_time;
   var end = '&end='+end_time;
   var symbols = '&symbols=dir:spd:&separator=,&interval=00:00:05';
@@ -377,7 +387,7 @@ if (location.hash === "#debug") {
     begin_time = begin_time.utc().format('YYYY-MM-DD%20HH:mm:ss');
     end_time = end_time.utc().format('YYYY-MM-DD%20HH:mm:ss');
 
-    pull_tower(begin_time, end_time);
+    pull_data('mendota/buoy',begin_time, end_time);
   } else {
     console.log('Pull last 3 hours...');
     pull_last_3_hours();

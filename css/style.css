@@ -3,6 +3,24 @@ svg {
   letter-spacing: 20%;
 }
 
+main {
+  padding-top: 1em;
+}
+
+.loading {
+    position: absolute;
+    top: 33%;
+    left: 50%;
+    width: 200px;
+    margin-left: -100px;
+    padding: 2em;
+    box-shadow: 2px 2px 5px rgba(100,100,100,.2);
+}
+
+.loading p {
+    margin: 0;
+}
+
 .axis, .grid {
   stroke: black;
   shape-rendering: crispEdges;
