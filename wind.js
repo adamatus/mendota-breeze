@@ -301,14 +301,16 @@ var add_overlapping_dir_arrows = function() {
       .attr('y2',function(d) { return -25*Math.cos(deg2rad(d.dir_mean)); });
 };
 
+// Draw the initial plot frame
+draw_summary();
+
 // Initial callback on data pull
 var draw_plots = function() {
-
-  draw_summary();
   update_timescale();
   compute_summaries();
   add_summary_ribbons();
   add_overlapping_dir_arrows();
+  $('.loading').hide();
 };
 
 var pull_local = function() {
