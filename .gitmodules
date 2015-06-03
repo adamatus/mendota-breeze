@@ -1,6 +1,0 @@
-[submodule "lib/d3"]
-	path = lib/d3
-	url = https://github.com/mbostock/d3.git
-[submodule "lib/jquery"]
-	path = lib/jquery
-	url = https://github.com/jquery/jquery.git
