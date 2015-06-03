@@ -78,7 +78,7 @@ var meters_per_sec2knots = function(d) {
   return d * 1.94384;
 };
 
-var yql_json2ascii = function(d) {
+var parse_response = function(d) {
   var myascii = [];
   var out = {};
   for (var i = 0; i < d.data.length; i++) {
@@ -87,7 +87,7 @@ var yql_json2ascii = function(d) {
     var time = moment(d.stamps[i]).subtract(5, 'hours').format('YYYY-MM-DD HH:mm:ss');
     out = {stamp: format.parse(time)};
     for (var j = 0; j < d.symbols.length; j++) {
-      out[d.symbols[j]] = +d.data[i].json[j];
+      out[d.symbols[j]] = +d.data[i][j];
       // Fix the column names FIXME: Delete old columns
       if (out['WIND_DIRECTION_2.0'] !== undefined) {
         out['wind_direction'] = out['WIND_DIRECTION_2.0'];
@@ -133,6 +133,7 @@ var format = d3.time.format("%Y-%m-%d %X");
 
 var update_timescale = function () {
   time_scale.domain(d3.extent(data[source].map(function(d) { return d.stamp;})));
+  console.log(time_scale.domain());
   d3.select('.x.axis').transition().call(timeAxis);
 };
 
@@ -170,7 +171,9 @@ var draw_summary = function() {
     .attr("class", "y grid");
   y_grid_speed.call(yAxisGrid.tickSize(-w));
 
-  var pg = plot.append('g')
+  // Add the plot-group, which will be populated asynchronously when
+  // the data is fetched
+  plot.append('g')
     .attr('class','plot-group');
 
   // Add y-axis
@@ -204,7 +207,6 @@ var draw_summary = function() {
 
 };
 
-
 var pad_x = function(d,i) {
     if (i === 0) {
       return summary_x(0);
@@ -234,8 +236,8 @@ var speed_quartiles = d3.svg.area()
 
 var add_summary_ribbons = function() {
   var ribbon_group = d3.select('#wind-summary g.plot-group')
-      .append('svg:g')
-      .attr('class','ribbon-group');
+    .append('svg:g')
+    .attr('class','ribbon-group');
 
   ribbon_group.append('svg:path')
       .style('fill','#deebf7')
@@ -268,7 +270,6 @@ var add_overlapping_dir_arrows = function() {
 
   arrow_groups.selectAll('line.arrows')
       .data(function(d) {
-        console.log(d);
         return d.all_dirs;
       })
     .enter().append('svg:line')
@@ -321,9 +322,7 @@ var draw_plots = function() {
     add_overlapping_dir_arrows();
     never_drawn = false;
   } else {
-    console.log('update ribbons');
     update_summary_ribbons();
-    console.log('update arrows');
     update_overlapping_dir_arrows();
   }
   $('.loading').hide();
@@ -343,39 +342,21 @@ var update_summary_ribbons = function() {
 var update_overlapping_dir_arrows = function() {
   var arrow_groups = d3.select('#wind-summary g.plot-group').selectAll('.arrow-group')
       .data(summary_data, function(d) { return d.timepoint; });
-    //.enter().append('svg:g')
-    //  .attr('class','arrow-group')
-    //  .attr('transform',function(d,i) {
-    //    return 'translate('+summary_x(i+0.5)+','+(h+54)+')';
-    //  });
 
   arrow_groups.selectAll('line.arrows')
       .data(function(d) {
-        console.log(d);
         return d.all_dirs;
       })
       .transition()
       .attr('x2',function(d) { return 25*Math.sin(deg2rad(d)); })
       .attr('y2',function(d) { return -25*Math.cos(deg2rad(d)); });
-    //.enter().append('svg:line')
-    //  .attr('class','arrows')
-    //  .attr('x1',0)
-    //  .attr('y1',0)
 
-  // Mean direction line
-  //arrow_groups.append('svg:line')
-  //    .style('stroke','#31a354')
-  //    .style('stroke-width','3px')
-  //    .attr('x1',0)
-  //    .attr('y1',0)
+	// Mean direction line
     arrow_groups.select('.dir-mean-line')
       .transition()
       .attr('x2',function(d) { return 25*Math.sin(deg2rad(d.dir_mean)); })
       .attr('y2',function(d) { return -25*Math.cos(deg2rad(d.dir_mean)); });
 
-  //arrow_groups.append('svg:line')
-  //    .style('stroke','#31a354')
-  //    .style('stroke-width','3px')
     arrow_groups.select('.dir-arrow-head1')
       .transition()
       .attr('x1',function(d) { return 18*Math.sin(deg2rad(d.dir_mean-20)); })
@@ -383,9 +364,6 @@ var update_overlapping_dir_arrows = function() {
       .attr('y1',function(d) { return -18*Math.cos(deg2rad(d.dir_mean-20)); })
       .attr('y2',function(d) { return -25*Math.cos(deg2rad(d.dir_mean)); });
 
-  //arrow_groups.append('svg:line')
-  //    .style('stroke','#31a354')
-  //    .style('stroke-width','3px')
     arrow_groups.select('.dir-arrow-head2')
       .transition()
       .attr('x1',function(d) { return 18*Math.sin(deg2rad(d.dir_mean+20)); })
@@ -424,32 +402,35 @@ var pull_last_3_hours = function() {
 
 var data = {'mendota/buoy':[],'rig/tower':[]};
 var source = 'mendota/buoy';
+var failcount = 0;
 
 // May also use: http://whateverorigin.org/
 var pull_data = function(which,begin_time, end_time) {
   $('.loading').show();
-  var url = 'http://metobs.ssec.wisc.edu/app/'+which+'/data/json?';
+  var url = 'http://metobs.ssec.wisc.edu/app/'+which+'/data/jsonp?';
   var begin = 'begin='+begin_time;
   var end = '&end='+end_time;
   var symbols = '&symbols=dir:spd:&separator=,&interval=00:00:05';
+  var callback = '&callback=?';
 
-  var full_url = url+begin+end+symbols;
+  var full_url = url+begin+end+symbols+callback;
 
-  $.getJSON("http://query.yahooapis.com/v1/public/yql",
-    {
-      q:      "select * from json where url=\""+full_url+"\"",
-      format: "json"
-    },
-    function(qdata){
-      if (qdata.query.results) {
-        var ascii = yql_json2ascii(qdata.query.results.json);
-        data[which] = ascii.slice();
-        draw_plots();
-      } else {
-        console.log('Did not get results!');
+  $.getJSON(full_url)
+    .done(function(d) {
+      var ascii = parse_response(d);
+      data[which] = ascii.slice();
+      draw_plots();
+	})
+    .fail(function() {
+      failcount++;
+	  if (failcount < 3) {
+        console.log('Data fetch failed, trying again');
+        pull_data();
+	  } else {
+        // FIXME: Generate pop-up to warn user that multiple fetches failed
+        console.log('Data fetch failed, giving up');
       }
-    }
-  );
+	});
 };
 
 function getQueryVariable(variable)
@@ -458,7 +439,7 @@ function getQueryVariable(variable)
        var vars = query.split("&");
        for (var i=0;i<vars.length;i++) {
                       var pair = vars[i].split("=");
-                      if(pair[0] == variable){return pair[1];}
+                      if(pair[0] === variable){return pair[1];}
               }
        return(null);
 }
@@ -497,10 +478,8 @@ $('#towerLabel').on('click',function() {
 
 var switch_data = function() {
   if (data[source].length === 0) {
-    console.log('fetching new data');
     pull_last_3_hours();
   } else {
-    console.log('update plot');
     draw_plots();
   }
 };
