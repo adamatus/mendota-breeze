@@ -84,7 +84,7 @@ var yql_json2ascii = function(d) {
   for (var i = 0; i < d.data.length; i++) {
     // FIXME This time code break with daylight savings...
     //var time = moment(d.stamps[i]).subtract('hours',6).format('YYYY-MM-DD HH:mm:ss');
-    var time = moment(d.stamps[i]).subtract('hours',5).format('YYYY-MM-DD HH:mm:ss');
+    var time = moment(d.stamps[i]).subtract(5, 'hours').format('YYYY-MM-DD HH:mm:ss');
     out = {stamp: format.parse(time)};
     for (var j = 0; j < d.symbols.length; j++) {
       out[d.symbols[j]] = +d.data[i].json[j];
@@ -415,7 +415,7 @@ var begin_time, end_time;
 var pull_last_3_hours = function() {
   // Only get the last 3 hours once, reused this time range for data source changes
   if (begin_time === undefined) {
-    begin_time = moment().utc().subtract('hours',3).format('YYYY-MM-DD%20HH:mm:ss');
+    begin_time = moment().utc().subtract(3, 'hours').format('YYYY-MM-DD%20HH:mm:ss');
     end_time = moment().utc().format('YYYY-MM-DD%20HH:mm:ss');
   }
 
